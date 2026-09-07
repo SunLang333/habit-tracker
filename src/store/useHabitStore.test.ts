@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useHabitStore } from './useHabitStore';
 
 jest.mock('@react-native-async-storage/async-storage', () => {
@@ -20,7 +21,7 @@ jest.mock('@react-native-async-storage/async-storage', () => {
 });
 
 beforeEach(() => {
-  useHabitStore.setState({ habits: [], checks: {} });
+  useHabitStore.setState({ habits: [], checks: {}, values: {} });
 });
 
 test('toggle persists check', () => {
@@ -65,4 +66,55 @@ test('toggleTodayAll checks all then unchecks all', () => {
 test('addHabit defaults reminderTime to 21:00', () => {
   const h = useHabitStore.getState().addHabit({ name: '冥想', color: '#9B59B6', icon: '🧘' });
   expect(h.reminderTime).toBe('21:00');
+});
+
+test('addHabit defaults kind to check', () => {
+  const h = useHabitStore.getState().addHabit({ name: '新习惯', color: '#fff', icon: '🏃' });
+  expect(h.kind).toBe('check');
+});
+
+test('setValue stores and clears numeric values', () => {
+  const h = useHabitStore.getState().addHabit({ name: '体重', color: '#fff', icon: '⚖️' });
+  useHabitStore.getState().setValue(h.id, '2026-09-07', 70.5);
+  expect(useHabitStore.getState().values[h.id]['2026-09-07']).toBe(70.5);
+  useHabitStore.getState().setValue(h.id, '2026-09-07', undefined);
+  expect(useHabitStore.getState().values[h.id]?.['2026-09-07']).toBeUndefined();
+});
+
+test('removeHabit clears values too', () => {
+  const h = useHabitStore.getState().addHabit({ name: '体重', color: '#fff', icon: '⚖️' });
+  useHabitStore.getState().setValue(h.id, '2026-09-07', 70);
+  useHabitStore.getState().removeHabit(h.id);
+  const st = useHabitStore.getState();
+  expect(st.habits.find((x) => x.id === h.id)).toBeUndefined();
+  expect(st.values[h.id]).toBeUndefined();
+});
+
+test('load migrates v1 data to v2 with empty values', async () => {
+  const v1 = {
+    habits: [{ id: 'h1', name: '旧习惯', color: '#fff', icon: '🏃', createdAt: 'x' }],
+    checks: { h1: { '2026-09-07': true } },
+  };
+  await AsyncStorage.setItem('@habit-tracker/v1', JSON.stringify(v1));
+  await AsyncStorage.removeItem('@habit-tracker/v2');
+  useHabitStore.setState({ habits: [], checks: {}, values: {}, loaded: false });
+  await useHabitStore.getState().load();
+  const st = useHabitStore.getState();
+  expect(st.habits).toEqual([{ ...v1.habits[0], kind: 'check' }]);
+  expect(st.checks).toEqual(v1.checks);
+  expect(st.values).toEqual({});
+  expect(st.loaded).toBe(true);
+  // 迁移后 v2 已持久化
+  const v2raw = await AsyncStorage.getItem('@habit-tracker/v2');
+  expect(v2raw).not.toBeNull();
+  await AsyncStorage.clear();
+});
+
+test('load with no data writes new 10-item seed', async () => {
+  await AsyncStorage.clear();
+  useHabitStore.setState({ habits: [], checks: {}, values: {}, loaded: false });
+  await useHabitStore.getState().load();
+  const st = useHabitStore.getState();
+  expect(st.habits.length).toBe(10);
+  expect(st.values).toEqual({});
 });
