@@ -1,6 +1,8 @@
 // 习惯数据类型与日期/统计纯函数
 // key 统一用 'YYYY-MM-DD'
 
+export type HabitKind = 'check' | 'number' | 'scale';
+
 export type Habit = {
   id: string;
   name: string;
@@ -9,9 +11,24 @@ export type Habit = {
   createdAt: string;
   /** 每日提醒时间 'HH:mm'，不设则不提醒 */
   reminderTime?: string;
+  kind: HabitKind;
+  /** number 型单位，如 kg / g / h */
+  unit?: string;
+  /** scale 型最大值，心情用 5 */
+  scaleMax?: number;
 };
 
 export type CheckMap = Record<string, boolean>; // key: 'YYYY-MM-DD'
+
+/** 数值记录：habitId -> dateKey -> number */
+export type ValueMap = Record<string, Record<string, number>>;
+
+/** scale 格点击：当前值 +1，超过 max 则回 0（即清除，返回 undefined） */
+export function nextScaleValue(current: number | undefined, max: number): number | undefined {
+  const cur = current ?? 0;
+  const next = cur + 1;
+  return next > max ? undefined : next;
+}
 
 export function toDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -105,12 +122,19 @@ export const HABIT_ICONS = ['🏃', '📖', '😴', '💧', '🧘', '✍️', '�
 /** 新习惯默认提醒时间 */
 export const DEFAULT_REMINDER_TIME = '21:00';
 
-/** 空态种子习惯 */
+/** 10 项种子习惯（对齐参考 reel 顺序） */
 export function seedHabits(): Habit[] {
   const now = new Date().toISOString();
   return [
-    { id: 'seed-run', name: '运动', color: '#7ED321', icon: '🏃', createdAt: now, reminderTime: '21:00' },
-    { id: 'seed-read', name: '阅读', color: '#FFB020', icon: '📖', createdAt: now, reminderTime: '21:00' },
-    { id: 'seed-sleep', name: '早睡', color: '#4A90E2', icon: '😴', createdAt: now, reminderTime: '21:00' },
+    { id: 'seed-weight', name: '体重', color: '#4A90E2', icon: '⚖️', createdAt: now, reminderTime: '21:00', kind: 'number', unit: 'kg' },
+    { id: 'seed-workout', name: '锻炼', color: '#7ED321', icon: '🏋️', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-stretch', name: '拉伸', color: '#20C2AA', icon: '🤸', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-creatine', name: '肌酸', color: '#9B59B6', icon: '💊', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-protein', name: '蛋白', color: '#E94E77', icon: '🥩', createdAt: now, reminderTime: '21:00', kind: 'number', unit: 'g' },
+    { id: 'seed-edit', name: '剪辑', color: '#FFB020', icon: '🎬', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-read', name: '阅读', color: '#FFB020', icon: '📖', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-coffee', name: '咖啡', color: '#8B5E34', icon: '☕', createdAt: now, reminderTime: '21:00', kind: 'check' },
+    { id: 'seed-sleep', name: '睡眠', color: '#4A90E2', icon: '😴', createdAt: now, reminderTime: '21:00', kind: 'number', unit: 'h' },
+    { id: 'seed-mood', name: '心情', color: '#FFD93D', icon: '😊', createdAt: now, reminderTime: '21:00', kind: 'scale', scaleMax: 5 },
   ];
 }
