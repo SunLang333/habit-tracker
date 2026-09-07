@@ -27,8 +27,6 @@ export default function Index() {
       }),
     [habits, checks, today],
   );
-  void sorted; // 排序结果供 MonthGrid 未来接入；当前 MonthGrid 直接读 store
-
   const days = buildMonthCells(year, month);
   const allDoneToday = habits.length > 0 && habits.every((h) => checks[h.id]?.[today]);
 
@@ -62,7 +60,7 @@ export default function Index() {
           <Pressable onPress={() => toggleTodayAll(today)} style={styles.allBtn}>
             <Text style={styles.allTxt}>{allDoneToday ? '撤销今日全打卡' : '一键今日全打卡 ✓'}</Text>
           </Pressable>
-          <MonthGrid year={year} month={month} todayKey={today} />
+          <MonthGrid year={year} month={month} todayKey={today} habits={sorted} />
           <Text style={styles.hint}>点格打卡 · 长按某格补打到今天 · 未来日期不可点</Text>
         </>
       )}

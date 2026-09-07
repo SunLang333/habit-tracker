@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { buildMonthCells } from '../src/store/habits';
+import type { Habit } from '../src/store/habits';
 import { useHabitStore } from '../src/store/useHabitStore';
 import { CheckCell } from './CheckCell';
 
@@ -9,12 +10,15 @@ export function MonthGrid({
   year,
   month,
   todayKey,
+  habits: habitsProp,
 }: {
   year: number;
   month: number; // 1-12
   todayKey: string;
+  habits?: Habit[]; // 可选：已排序的习惯列表；不传则直接读 store（默认顺序）
 }) {
-  const habits = useHabitStore((s) => s.habits);
+  const storeHabits = useHabitStore((s) => s.habits);
+  const habits = habitsProp ?? storeHabits;
   const checks = useHabitStore((s) => s.checks);
   const toggle = useHabitStore((s) => s.toggle);
   const fillRange = useHabitStore((s) => s.fillRange);
