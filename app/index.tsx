@@ -3,7 +3,9 @@ import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MonthGrid } from '../components/MonthGrid';
+import { ValueEditor } from '../components/ValueEditor';
 import { buildMonthCells, calcStreak, todayKey } from '../src/store/habits';
+import type { Habit } from '../src/store/habits';
 import { useHabitStore } from '../src/store/useHabitStore';
 
 export default function Index() {
@@ -13,10 +15,13 @@ export default function Index() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const habits = useHabitStore((s) => s.habits);
   const checks = useHabitStore((s) => s.checks);
+  const values = useHabitStore((s) => s.values);
   const toggleTodayAll = useHabitStore((s) => s.toggleTodayAll);
+  const setValue = useHabitStore((s) => s.setValue);
   const today = todayKey();
+  const [editing, setEditing] = useState<{ habit: Habit; dateKey: string } | null>(null);
 
-  // 排序：今日未完成在上、同组按 streak 倒序
+  // 排序：今日未完成在上、同组按 streak 倒序（数值型无 streak，自然沉底）
   const sorted = useMemo(
     () =>
       [...habits].sort((a, b) => {
@@ -60,8 +65,14 @@ export default function Index() {
           <Pressable onPress={() => toggleTodayAll(today)} style={styles.allBtn}>
             <Text style={styles.allTxt}>{allDoneToday ? '撤销今日全打卡' : '一键今日全打卡 ✓'}</Text>
           </Pressable>
-          <MonthGrid year={year} month={month} todayKey={today} habits={sorted} />
-          <Text style={styles.hint}>点格打卡 · 长按某格补打到今天 · 未来日期不可点</Text>
+          <MonthGrid
+            year={year}
+            month={month}
+            todayKey={today}
+            habits={sorted}
+            onNumberPress={(habit, dateKey) => setEditing({ habit, dateKey })}
+          />
+          <Text style={styles.hint}>点格打卡 · 数字格点开填数 · 心情格点击循环 · 长按某格补打到今天 · 未来日期不可点</Text>
         </>
       )}
 
@@ -74,6 +85,22 @@ export default function Index() {
       <Link href="/add-habit" style={styles.fab}>
         +
       </Link>
+
+      <ValueEditor
+        visible={!!editing}
+        title={editing ? `${editing.habit.icon} ${editing.habit.name} · ${editing.dateKey.slice(5)}` : ''}
+        unit={editing?.habit.unit}
+        initialValue={editing ? values[editing.habit.id]?.[editing.dateKey] : undefined}
+        onSave={(v) => {
+          if (editing) setValue(editing.habit.id, editing.dateKey, v);
+          setEditing(null);
+        }}
+        onClear={() => {
+          if (editing) setValue(editing.habit.id, editing.dateKey, undefined);
+          setEditing(null);
+        }}
+        onCancel={() => setEditing(null)}
+      />
     </ScrollView>
   );
 }

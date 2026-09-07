@@ -1,26 +1,30 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
-import { buildMonthCells } from '../src/store/habits';
+import { ScrollView, View, Text, StyleSheet, Pressable } from 'react-native';
+import { buildMonthCells, nextScaleValue } from '../src/store/habits';
 import type { Habit } from '../src/store/habits';
 import { useHabitStore } from '../src/store/useHabitStore';
 import { CheckCell } from './CheckCell';
 
-/** 手账式月表格：首列习惯、首行日期、周末灰底、点格切换、长按补打到今天 */
+/** 手账式月表格：check 格照旧；number 格显示数值点开编辑器；scale 格点击循环+1 */
 export function MonthGrid({
   year,
   month,
   todayKey,
   habits: habitsProp,
+  onNumberPress,
 }: {
   year: number;
   month: number; // 1-12
   todayKey: string;
   habits?: Habit[]; // 可选：已排序的习惯列表；不传则直接读 store（默认顺序）
+  onNumberPress?: (habit: Habit, dateKey: string) => void;
 }) {
   const storeHabits = useHabitStore((s) => s.habits);
   const habits = habitsProp ?? storeHabits;
   const checks = useHabitStore((s) => s.checks);
+  const values = useHabitStore((s) => s.values);
   const toggle = useHabitStore((s) => s.toggle);
+  const setValue = useHabitStore((s) => s.setValue);
   const fillRange = useHabitStore((s) => s.fillRange);
   const days = buildMonthCells(year, month);
 
@@ -51,8 +55,40 @@ export function MonthGrid({
               </Text>
             </View>
             {days.map((d) => {
-              const on = !!checks[h.id]?.[d];
+              const kind = h.kind ?? 'check';
               const future = d > todayKey;
+              if (kind === 'number') {
+                const v = values[h.id]?.[d];
+                return (
+                  <Pressable
+                    key={d}
+                    onPress={() => {
+                      if (!future) onNumberPress?.(h, d);
+                    }}
+                    style={[styles.cell, styles.numCell, v !== undefined && { borderColor: h.color }]}>
+                    <Text style={[styles.numText, v !== undefined && { color: h.color }]}>
+                      {v !== undefined ? String(v) : ''}
+                    </Text>
+                  </Pressable>
+                );
+              }
+              if (kind === 'scale') {
+                const max = h.scaleMax ?? 5;
+                const v = values[h.id]?.[d];
+                return (
+                  <Pressable
+                    key={d}
+                    onPress={() => {
+                      if (!future) setValue(h.id, d, nextScaleValue(v, max));
+                    }}
+                    style={[styles.cell, styles.scaleCell, v !== undefined && { borderColor: h.color }]}>
+                    <Text style={styles.scaleText}>
+                      {v !== undefined ? '●'.repeat(Math.min(v, max)) : ''}
+                    </Text>
+                  </Pressable>
+                );
+              }
+              const on = !!checks[h.id]?.[d];
               return (
                 <CheckCell
                   key={d}
@@ -91,4 +127,8 @@ const styles = StyleSheet.create({
   dayText: { fontSize: 12 },
   todayText: { fontWeight: '800' },
   habitText: { fontSize: 13 },
+  numCell: { backgroundColor: '#fff' },
+  numText: { fontSize: 11, fontWeight: '700', color: '#333' },
+  scaleCell: { backgroundColor: '#fff' },
+  scaleText: { fontSize: 8, color: '#E94E77' },
 });
