@@ -102,6 +102,9 @@ export function last8WeekRates(
 export const HABIT_COLORS = ['#7ED321', '#FFB020', '#4A90E2', '#E94E77', '#9B59B6', '#20C2AA'];
 export const HABIT_ICONS = ['🏃', '📖', '😴', '💧', '🧘', '✍️', '🥗', '🎸'];
 
+/** 新习惯默认提醒时间 */
+export const DEFAULT_REMINDER_TIME = '21:00';
+
 /** 空态种子习惯 */
 export function seedHabits(): Habit[] {
   const now = new Date().toISOString();

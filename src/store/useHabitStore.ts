@@ -1,17 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import type { Habit } from './habits';
-import { seedHabits } from './habits';
+import { seedHabits, DEFAULT_REMINDER_TIME } from './habits';
 
 const KEY = '@habit-tracker/v1';
 
-// 说明：jest(node) 环境下 AsyncStorage 的 window.localStorage 不存在，
-// 测试文件用 jest.mock 拦截本模块（见 useHabitStore.test.ts 顶部）。
+// 说明：jest(node) 环境下 window.localStorage 不存在，
+// 测试文件用 jest.mock 拦截 AsyncStorage（见 useHabitStore.test.ts 顶部）。
 function getStorage() {
   return AsyncStorage;
 }
-
-export const DEFAULT_REMINDER_TIME = '21:00';
 
 type State = {
   habits: Habit[];
